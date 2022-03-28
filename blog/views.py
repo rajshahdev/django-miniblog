@@ -6,6 +6,7 @@ from .forms import Signupform, Loginform, PostForm
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
 from .models import Post
+from django.contrib.auth.models import Group
 # Create your views here.
 
 def home(request):
@@ -18,7 +19,10 @@ def about(request):
 def dashboard(request):
     if request.user.is_authenticated:
         post = Post.objects.all()
-        return render(request,'blog/dashboard.html',{'posts':post})
+        user = request.user
+        full_name = user.get_full_name()
+        gps = user.groups.all()
+        return render(request,'blog/dashboard.html',{'posts':post,'full_name':full_name,'groups':gps})
     else:
         return HttpResponseRedirect('/login/')
 
@@ -35,8 +39,9 @@ def user_signup(request):
         form = Signupform(request.POST)
         if form.is_valid():
             messages.success(request, 'Congratulations for becoming an author!!! ')
-            form.save()
-            form = Signupform()
+            user = form.save()
+            group = Group.objects.get(name='Author')
+            user.groups.add(group)
     else:
         form = Signupform()
     return render(request,'blog/signup.html',{'form':form})
